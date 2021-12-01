@@ -3,9 +3,9 @@
 ## Initial Setup
 I chose the smallest SageMaker instance available for my notebook, `ml.t2.medium` (Figure: Sage Maker Instance), because I'll be leaving it open for hours while I go through the project and don't need a very powerful instance in terms of CPU or RAM. 
 
-![SageMaker Instance](images/1_sagemaker_instance.png?raw=true "SageMaker Instance")
+![SageMaker Instance](images/1_sagemaker_instance.png "SageMaker Instance")
 
-![S3 Bucket Setup](images/2_s3_bucket.png?raw=true "S3 Bucket Setup")
+![S3 Bucket Setup](images/2_s3_bucket.png "S3 Bucket Setup")
 
 Additionally, I picked `ml.m5.2xlarge` for both tuning and training since it has higher processing power, allowing the tuning and training processes to be done faster and avoiding memory concerns I faced with this dataset in a prior project.
 To speed up tuning and ensure that better hyperparameters were chosen, I raised `max_jobs` to 12 for tuning, `max_parallel_jobs` to 3, and `early_stopping` type to "Auto."  
@@ -17,14 +17,14 @@ I discovered that I needed to update pandas since I was getting problems otherwi
 790 
 * Multi instance trained endpoint: pytorch-inference-2021-11-28-17-26-20-083 
 
-![Trained Endpoints](images/3_trained_endpoints.png?raw=true "Trained Endpoints")
+![Trained Endpoints](images/3_trained_endpoints.png "Trained Endpoints")
 
 ## EC2 Training
 I utilized the `t3.xlarge` instance and the `Deep Learning AMI (Amazon Linux 2) Version 54.0.` This seemed to me to be a nice balance of performance and affordability. Because there are two end points running while performing EC2 training, it makes logical to use a more powerful instance type than is required.
 Similarly, because we don't know how long it'll take to set up and debug this EC2 training part, it's better to go with a smaller instance so we don't have to pay for a large instance while we're doing setup, debugging, and so on.
 As you can see from my screenshot, I've limited access to my EC2 instance to only my IP address in order to prevent the risk of it being accessed unlawfully.
 
-![EC2 Secure Access](images/4_secure_access_to_ec2.png?raw=true "EC2 Secure Access")
+![EC2 Secure Access](images/4_secure_access_to_ec2.png "EC2 Secure Access")
 
 ### Differences between ec2train1.py (EC2 script) and train_and_deploy-solution.ipynb+hpo.py (SageMaker scripts)
 The key difference is that ec2train1.py lacks the main function, as well as the functionality to handle argument parsing and optional main running. Similarly, as I implemented in my modified hpo.py, ec2train1.py does not enable multi-instance learning. The most significant difference is that the ec2train1.py script trains using test data, which means it utilizes a lot smaller dataset and the same data for training and testing.
@@ -39,9 +39,9 @@ train_data = torchvision.datasets.ImageFolder(root=train_data_path, transform=tr
 to obtain a more thorough understanding of the EC2 instance The two spikes in CPU use on the `EC2 Training Resource` Use picture indicate that this took longer to run.
  
 
-![EC2 Training](images/5_ec2_training_job.png?raw=true "EC2 Training")
+![EC2 Training](images/5_ec2_training_job.png "EC2 Training")
 
-![EC2 Training Resource Use](images/6_ec2_training_resource_use.png?raw=true "EC2 Training Resource Use")
+![EC2 Training Resource Use](images/6_ec2_training_resource_use.png "EC2 Training Resource Use")
 
 
 ## Lambda functions
@@ -74,32 +74,32 @@ After adding full access to SageMaker to the role attached to the lambda functio
 }
 ```
 
-![Lambda Functions](images/7_lambda_functions.png?raw=true "Lambda Functions")
+![Lambda Functions](images/7_lambda_functions.png "Lambda Functions")
 
 ### Permissions
 I'm concerned about the permissions we've given these lambda functions because they don't appear to follow the concept of least privilege. In an ideal world, we'd only allow these lambda functions to query the endpoints that they're intended to be allowed to query. I'll have to do some more investigation to see if there's anything I can do about it. Additionally, these lambda functions might be utilised as an extra layer of defence against DOS assaults on endpoints.
 Furthermore, I am concerned that the account's root user does not employ MFA.
 
 
-![Lambda Functions Failed Test](images/8_lambda_functions_failed_test.png?raw=true "Lambda Functions Failed Test")
+![Lambda Functions Failed Test](images/8_lambda_functions_failed_test.png "Lambda Functions Failed Test")
 
-![Lambda Functions Role Update](images/9_lambda_functions_role_update.png?raw=true "Lambda Functions Role Update")
+![Lambda Functions Role Update](images/9_lambda_functions_role_update.png "Lambda Functions Role Update")
 
-![Lambda Functions Passed Test](images/10_lambda_functions_passed_test.png?raw=true "Lambda Functions Passed Test")
+![Lambda Functions Passed Test](images/10_lambda_functions_passed_test.png "Lambda Functions Passed Test")
 
-![Lambda Function](images/11_lambda_function.png?raw=true "Lambda Function")
+![Lambda Function](images/11_lambda_function.png "Lambda Function")
 
-![IAM Dashboard](images/12_iam_dashboard.png?raw=true "IAM Dashboard")
+![IAM Dashboard](images/12_iam_dashboard.png "IAM Dashboard")
 
-![IAM Dashboard Roles](images/13_iam_dashboard_roles.png?raw=true "IAM Dashboard Roles")
+![IAM Dashboard Roles](images/13_iam_dashboard_roles.png "IAM Dashboard Roles")
 
 ## Concurrency and auto-scaling
 I picked reserved concurrency over shared concurrency since it is free and satisfies our current needs. Furthermore, we are unlikely to handle more than a few requests per endpoint instance at any given time, as this would indicate that the latter is overloaded, so having this value be a multiple of the number of endpoint instances makes sense, so I chose 100, allowing for 20 requests per endpoint instance. I decided to let the endpoint scale out to between one and five instances. While it is unlikely that this would ever be an issue, because each prediction takes roughly 0.25 seconds, this should allow for around 20 inquiries per second, which, with effective request throttling, should allow for a significant number of people to use the service. 
 
-![Configuring Concurrency](images/14_configuring_concurrency.png?raw=true "Configuring Concurrency")
+![Configuring Concurrency](images/14_configuring_concurrency.png "Configuring Concurrency")
 
-![Configured Concurrency](images/15_configured_concurrency.png?raw=true "Configured Concurrency")
+![Configured Concurrency](images/15_configured_concurrency.png "Configured Concurrency")
 
-![Configuring Concurrency](images/16_configuring_autoscaling.png?raw=true "Configuring Autoscaling")
+![Configuring Concurrency](images/16_configuring_autoscaling.png "Configuring Autoscaling")
 
-![Configured Concurrency](images/17_configured_autoscaling.png?raw=true "Configured Concurrency")
+![Configured Concurrency](images/17_configured_autoscaling.png "Configured Concurrency")
